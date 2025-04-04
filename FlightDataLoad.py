@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 import uuid
 from dotenv import load_dotenv
 import os
+import logging
 
 def parse_flight_info(departure_str, return_str, flight_year):
     def parse_segment(segment, trip_type, trip_id):
@@ -60,57 +61,77 @@ def parse_flight_info(departure_str, return_str, flight_year):
 
     return df
     
-# Load environment variables
-load_dotenv()
 
-# Initialzie google flight bot
-gf_bot = GoogleFlightBot(os.getenv('CHROME_DRIVER_PATH'), headless=True)
+log_filename = f"logs/flight_price_tracker_{datetime.now().strftime('%Y%m%d')}.log"
+logging.basicConfig(
+    filename=log_filename,
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
+logging.info("Script started.")
 
-# Run the bot for different routes
-YYC = gf_bot.run(origin='YYZ', destination='YYC', departure_dt='2025-08-22', return_dt='2025-08-26')
-NRT = gf_bot.run(origin='YYZ', destination='NRT', departure_dt='2026-08-02', return_dt='2026-08-12')
-MAD = gf_bot.run(origin='YYZ', destination='MAD', departure_dt='2026-08-02', return_dt='2026-08-12')
-LIS = gf_bot.run(origin='YYZ', destination='LIS', departure_dt='2026-08-02', return_dt='2026-08-12')
+try:
+    # Load environment variables
+    load_dotenv()
 
-# Extract flight details
-df_YYC = parse_flight_info(YYC[0], YYC[1], flight_year='2025')
-df_NRT = parse_flight_info(NRT[0], NRT[1], flight_year='2026')
-df_MAD = parse_flight_info(MAD[0], MAD[1], flight_year='2026')
-df_LIS = parse_flight_info(LIS[0], LIS[1], flight_year='2026')
+    # Initialzie google flight bot
+    gf_bot = GoogleFlightBot(os.getenv('CHROME_DRIVER_PATH'), headless=True)
 
-all_flights_df = pd.concat([
-    df_YYC,
-    df_NRT,
-    df_MAD,
-    df_LIS
-], ignore_index=True)
+    # Run the bot for different routes
+    YYC = gf_bot.run(origin='YYZ', destination='YYC', departure_dt='2025-08-22', return_dt='2025-08-26')
+    NRT = gf_bot.run(origin='YYZ', destination='NRT', departure_dt='2026-08-02', return_dt='2026-08-12')
+    MAD = gf_bot.run(origin='YYZ', destination='MAD', departure_dt='2026-08-02', return_dt='2026-08-12')
+    LIS = gf_bot.run(origin='YYZ', destination='LIS', departure_dt='2026-08-02', return_dt='2026-08-12')
+    logging.info("Sucessfully pulled flight data.")
 
-# Add column for timestamp
-all_flights_df['created_at'] = datetime.now(timezone.utc)
+    # Extract flight details
+    df_YYC = parse_flight_info(YYC[0], YYC[1], flight_year='2025')
+    df_NRT = parse_flight_info(NRT[0], NRT[1], flight_year='2026')
+    df_MAD = parse_flight_info(MAD[0], MAD[1], flight_year='2026')
+    df_LIS = parse_flight_info(LIS[0], LIS[1], flight_year='2026')
+    logging.info("Sucessfully parsed flight data.")
 
-# Convert datatypes
-all_flights_df['departure_date'] = pd.to_datetime(all_flights_df['departure_date'], errors='coerce').dt.date
-all_flights_df['arrival_date'] = pd.to_datetime(all_flights_df['arrival_date'], errors='coerce').dt.date
-all_flights_df['price'] = all_flights_df['price'].astype(int)
-all_flights_df['duration'] = all_flights_df['duration'].astype(str)
-all_flights_df['id'] = all_flights_df['id'].astype(str)
-all_flights_df['currency'] = all_flights_df['currency'].astype(str)
-all_flights_df['airline'] = all_flights_df['airline'].astype(str)
-all_flights_df['departure_airport'] = all_flights_df['departure_airport'].astype(str)
-all_flights_df['arrival_airport'] = all_flights_df['arrival_airport'].astype(str)
-all_flights_df['type'] = all_flights_df['type'].astype(str)
+    all_flights_df = pd.concat([
+        df_YYC,
+        df_NRT,
+        df_MAD,
+        df_LIS
+    ], ignore_index=True)
 
-# connect to postgres
-username = os.getenv('DB_USERNAME')
-password = os.getenv('DB_PASSWORD')
-host = os.getenv('DB_HOST')
-port = os.getenv('DB_PORT')
-database = os.getenv('DB_DATABASE')  
+    # Add column for timestamp
+    all_flights_df['created_at'] = datetime.now(timezone.utc)
 
-connection_string = f'postgresql+psycopg2://{username}:{password}@{host}:{port}/{database}'
-engine = create_engine(connection_string)
+    # Convert datatypes
+    all_flights_df['departure_date'] = pd.to_datetime(all_flights_df['departure_date'], errors='coerce').dt.date
+    all_flights_df['arrival_date'] = pd.to_datetime(all_flights_df['arrival_date'], errors='coerce').dt.date
+    all_flights_df['price'] = all_flights_df['price'].astype(int)
+    all_flights_df['duration'] = all_flights_df['duration'].astype(str)
+    all_flights_df['id'] = all_flights_df['id'].astype(str)
+    all_flights_df['currency'] = all_flights_df['currency'].astype(str)
+    all_flights_df['airline'] = all_flights_df['airline'].astype(str)
+    all_flights_df['departure_airport'] = all_flights_df['departure_airport'].astype(str)
+    all_flights_df['arrival_airport'] = all_flights_df['arrival_airport'].astype(str)
+    all_flights_df['type'] = all_flights_df['type'].astype(str)
+    logging.info("Successfully converted datatypes.")
 
-# Upload dataframe to PostgreSQL
-all_flights_df.to_sql('flights', con=engine, if_exists='append', index=False)
+    # connect to postgres
+    username = os.getenv('DB_USERNAME')
+    password = os.getenv('DB_PASSWORD')
+    host = os.getenv('DB_HOST')
+    port = os.getenv('DB_PORT')
+    database = os.getenv('DB_DATABASE')  
 
+    connection_string = f'postgresql+psycopg2://{username}:{password}@{host}:{port}/{database}'
+    engine = create_engine(connection_string)
 
+    # Upload dataframe to PostgreSQL
+    all_flights_df.to_sql('flights', con=engine, if_exists='append', index=False)
+    logging.info("Sucessfully uploaded data.")
+
+    with open(log_filename, 'a') as f:
+        f.write("\n=== START OF DATA ===\n")
+        f.write(all_flights_df.to_string(index=False))
+        f.write("\n=== END OF DATA ===\n")
+
+except Exception as e:
+    logging.error("An error occurred", exc_info=True)

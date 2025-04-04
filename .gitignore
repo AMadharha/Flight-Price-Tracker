@@ -1,3 +1,6 @@
 __pycache__
 drivers
 .env
+logs
+chromedriver
+chromedriver.exe
