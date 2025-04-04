@@ -61,8 +61,10 @@ def parse_flight_info(departure_str, return_str, flight_year):
 
     return df
     
+# Load environment variables
+load_dotenv("/home/kush0/projects/Flight-Price-Tracker/.env")
 
-log_filename = f"./logs/flight_price_tracker_{datetime.now().strftime('%Y%m%d')}.log"
+log_filename = f"{os.getenv("LOG_PATH")}flight_price_tracker_{datetime.now().strftime('%Y%m%d')}.log"
 logging.basicConfig(
     filename=log_filename,
     level=logging.INFO,
@@ -71,9 +73,6 @@ logging.basicConfig(
 logging.info("Script started.")
 
 try:
-    # Load environment variables
-    load_dotenv()
-
     # Initialzie google flight bot
     gf_bot = GoogleFlightBot(os.getenv('CHROME_DRIVER_PATH'), headless=True)
 

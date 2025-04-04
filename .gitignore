@@ -1,6 +1,10 @@
 __pycache__
 drivers
+drivers/
 .env
 logs
+logs/
 chromedriver
 chromedriver.exe
+venv
+venv/
