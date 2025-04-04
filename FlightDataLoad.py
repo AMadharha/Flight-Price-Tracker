@@ -62,7 +62,7 @@ def parse_flight_info(departure_str, return_str, flight_year):
     return df
     
 
-log_filename = f"logs/flight_price_tracker_{datetime.now().strftime('%Y%m%d')}.log"
+log_filename = f"./logs/flight_price_tracker_{datetime.now().strftime('%Y%m%d')}.log"
 logging.basicConfig(
     filename=log_filename,
     level=logging.INFO,
