@@ -2,7 +2,7 @@ from GoogleFlightBot import GoogleFlightBot
 import re
 import pandas as pd
 from sqlalchemy import create_engine
-from datetime import datetime, timezone
+from datetime import datetime
 import uuid
 from dotenv import load_dotenv
 import os
@@ -15,7 +15,7 @@ def parse_flight_info(departure_str, return_str, flight_year):
         airline_match = re.search(r'flight with ([\w\s\-]+)\.', segment)
         dep_info_match = re.search(r'Leaves (.*?) at ([\d: APM]+) on (\w+), ([\w]+ \d+)', segment)
         arr_info_match = re.search(r'arrive[s]? at (.*?) at ([\d: APM]+) on (\w+), ([\w]+ \d+)', segment)
-        duration_match = re.search(r'Total duration ([\dhmin\s]+)', segment)
+        duration_match = re.search(r'Total duration (.+?)\.', segment)
 
         # Extracted values
         price = int(price_match.group(1).replace(",", "")) if price_match else None
@@ -37,9 +37,9 @@ def parse_flight_info(departure_str, return_str, flight_year):
         except:
             dep_date, arr_date = None, None
 
-        return {
+        # Return data
+        row =  {
             'id': trip_id,
-            'type': trip_type,
             'price': price,
             'currency': currency,
             'stops': stops,
@@ -53,16 +53,26 @@ def parse_flight_info(departure_str, return_str, flight_year):
             'duration': duration
         }
 
+        if trip_type == 'return':
+            return_row = {f"return_{key}": value for key, value in row.items() if key not in ['id']}
+            return return_row
+        
+        return row
+
     trip_id = str(uuid.uuid4())  # Unique ID for the roundtrip
     dep_data = parse_segment(departure_str, 'departure', trip_id)
     ret_data = parse_segment(return_str, 'return', trip_id)
 
-    df = pd.DataFrame([dep_data, ret_data])
+    # combine data
+    combined_data = {**dep_data, **ret_data}
+
+    df = pd.DataFrame([combined_data])
 
     return df
     
 # Load environment variables
 load_dotenv("/home/kush0/projects/Flight-Price-Tracker/.env")
+#load_dotenv('./.env')
 
 log_filename = f"{os.getenv("LOG_PATH")}flight_price_tracker_{datetime.now().strftime('%Y%m%d')}.log"
 logging.basicConfig(
@@ -98,19 +108,28 @@ try:
     ], ignore_index=True)
 
     # Add column for timestamp
-    all_flights_df['created_at'] = datetime.now(timezone.utc)
+    all_flights_df['created_at'] = datetime.today()
 
     # Convert datatypes
     all_flights_df['departure_date'] = pd.to_datetime(all_flights_df['departure_date'], errors='coerce').dt.date
     all_flights_df['arrival_date'] = pd.to_datetime(all_flights_df['arrival_date'], errors='coerce').dt.date
+    all_flights_df['return_departure_date'] = pd.to_datetime(all_flights_df['return_departure_date'], errors='coerce').dt.date
+    all_flights_df['return_arrival_date'] = pd.to_datetime(all_flights_df['return_arrival_date'], errors='coerce').dt.date
+
     all_flights_df['price'] = all_flights_df['price'].astype(int)
+    all_flights_df['return_price'] = all_flights_df['return_price'].astype(int)
+
     all_flights_df['duration'] = all_flights_df['duration'].astype(str)
+    all_flights_df['return_duration'] = all_flights_df['return_duration'].astype(str)
     all_flights_df['id'] = all_flights_df['id'].astype(str)
     all_flights_df['currency'] = all_flights_df['currency'].astype(str)
+    all_flights_df['return_currency'] = all_flights_df['return_currency'].astype(str)
     all_flights_df['airline'] = all_flights_df['airline'].astype(str)
+    all_flights_df['return_airline'] = all_flights_df['return_airline'].astype(str)
     all_flights_df['departure_airport'] = all_flights_df['departure_airport'].astype(str)
+    all_flights_df['return_departure_airport'] = all_flights_df['return_departure_airport'].astype(str)
     all_flights_df['arrival_airport'] = all_flights_df['arrival_airport'].astype(str)
-    all_flights_df['type'] = all_flights_df['type'].astype(str)
+    all_flights_df['return_arrival_airport'] = all_flights_df['return_arrival_airport'].astype(str)
     logging.info("Successfully converted datatypes.")
 
     # connect to postgres

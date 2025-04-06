@@ -8,3 +8,5 @@ chromedriver
 chromedriver.exe
 venv
 venv/
+*.log
+*.ipynb
