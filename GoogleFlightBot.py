@@ -63,28 +63,28 @@ class GoogleFlightBot:
         origin_input.clear()
         origin_input.send_keys(origin)
 
-        time.sleep(1)
+        time.sleep(2)
         origin_option = WebDriverWait(self.driver, 10).until(
             EC.element_to_be_clickable((By.XPATH, f'//li[contains(@aria-label, "{origin}")]'))
         )
         origin_option.click()
 
         # Input destination airport
-        time.sleep(1)
+        time.sleep(2)
         destination_input = WebDriverWait(self.driver, 10).until(
             EC.presence_of_element_located((By.XPATH, '//input[@aria-label="Where to? "]'))
         )
         origin_input.clear()
         destination_input.send_keys(destination)
 
-        time.sleep(1)
+        time.sleep(2)
         destination_option = WebDriverWait(self.driver, 10).until(
             EC.element_to_be_clickable((By.XPATH, f'//li[contains(@aria-label, "{destination}")]'))
         )
         destination_option.click()
 
         # Input departure date
-        time.sleep(1)
+        time.sleep(2)
         departure_input = WebDriverWait(self.driver, 10).until(
             EC.presence_of_element_located((By.XPATH, '//input[@aria-label="Departure"]'))
         )
@@ -92,7 +92,7 @@ class GoogleFlightBot:
         departure_input.send_keys(departure_date)
 
         # Click somewhere else
-        time.sleep(1)
+        time.sleep(2)
         flights_div = self.driver.find_element(By.XPATH, "//div[text()='Flights']")
         location = flights_div.location
         x = location['x']
@@ -101,7 +101,7 @@ class GoogleFlightBot:
         self.actions.reset_actions()
 
         # Input return date
-        time.sleep(1)
+        time.sleep(2)
         return_input = WebDriverWait(self.driver, 10).until(
             EC.presence_of_element_located((By.XPATH, '//input[@aria-label="Return"]'))
         )
@@ -109,7 +109,7 @@ class GoogleFlightBot:
         return_input.send_keys(return_date)
 
         # Click somewhere else
-        time.sleep(1)
+        time.sleep(2)
         flights_div = self.driver.find_element(By.XPATH, "//div[text()='Flights']")
         location = flights_div.location
         x = location['x']
@@ -118,14 +118,14 @@ class GoogleFlightBot:
         self.actions.reset_actions()
 
         # Search for flights
-        time.sleep(1)
+        time.sleep(2)
         search_button = WebDriverWait(self.driver, 10).until(
             EC.element_to_be_clickable((By.XPATH, '//button[@aria-label="Search"]'))
         )
         search_button.click()
 
         # Extract departure flight details
-        time.sleep(1)
+        time.sleep(3)
         departure_flight_divs = WebDriverWait(self.driver, 10).until(
             EC.presence_of_all_elements_located((By.XPATH, "//div[contains(@aria-label, 'round trip total') and contains(@aria-label, 'Select flight')]"))
         )
@@ -133,7 +133,7 @@ class GoogleFlightBot:
             departure_details = departure_flight_divs[0].get_attribute("aria-label")
 
         # Click the departure flight
-        time.sleep(1)
+        time.sleep(3)
         self.driver.execute_script("window.scrollTo(0, 0);")
         window_size = self.driver.get_window_size()
         center_x = window_size["width"] // 2
@@ -141,7 +141,7 @@ class GoogleFlightBot:
         self.actions.move_by_offset(center_x, center_y).click().perform()
 
         # Extract returning flight details
-        time.sleep(1)
+        time.sleep(3)
         returning_flight_divs = WebDriverWait(self.driver, 10).until(
             EC.presence_of_all_elements_located((By.XPATH, "//div[contains(@aria-label, 'round trip total') and contains(@aria-label, 'Select flight')]"))
         )
