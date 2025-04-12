@@ -146,6 +146,8 @@ try:
     all_flights_df.to_sql('flights', con=engine, if_exists='append', index=False)
     logging.info("Sucessfully uploaded data.")
 
+    engine.dispose()
+
     with open(log_filename, 'a') as f:
         f.write("\n=== START OF DATA ===\n")
         f.write(all_flights_df.to_string(index=False))
